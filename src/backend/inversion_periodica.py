@@ -47,6 +47,12 @@ def simular_inversion_periodica(df: pd.DataFrame, cantidad_mensual: float,
     # También calcular retorno anual promedio
     retorno_anual_promedio = retornos_mensuales.mean() * 12 * 100
     
+    # Calcular volatilidad anualizada para el rango de incertidumbre
+    volatilidad_anual = retorno_mensual_std * np.sqrt(12)  # Volatilidad anualizada
+    # Usar 1.96 desviaciones estándar para intervalo de confianza del 95%
+    # O 1 desviación estándar para intervalo del 68%
+    factor_incertidumbre = 1.0  # 1 desviación estándar (68% de confianza)
+    
     # Simular inversión mensual desde hoy hacia el futuro
     evolución = []
     unidades_totales = 0
@@ -115,6 +121,29 @@ def simular_inversion_periodica(df: pd.DataFrame, cantidad_mensual: float,
                 'contribucion_total': dato_año['total_invertido']
             })
     
+    # Calcular rangos de incertidumbre basados en volatilidad histórica
+    # Para cada punto en la evolución, calcular el rango usando volatilidad acumulada
+    # La banda inferior será más pequeña (asimetría) porque los valores no pueden ser negativos
+    evolucion_con_rangos = []
+    for i, punto in enumerate(evolución):
+        # Volatilidad acumulada hasta este punto (raíz cuadrada del tiempo)
+        meses_transcurridos = i
+        if meses_transcurridos > 0:
+            volatilidad_acumulada = retorno_mensual_std * np.sqrt(meses_transcurridos)
+            # Calcular rango usando factor de incertidumbre (1 desviación estándar = 68% confianza)
+            # Banda inferior más pequeña (0.7x) porque los valores no pueden ser negativos
+            # Banda superior más grande (1.3x) porque el crecimiento puede ser ilimitado
+            valor_min = punto['valor_actual'] * (1 - factor_incertidumbre * volatilidad_acumulada * 0.7)
+            valor_max = punto['valor_actual'] * (1 + factor_incertidumbre * volatilidad_acumulada * 1.3)
+        else:
+            valor_min = punto['valor_actual']
+            valor_max = punto['valor_actual']
+        
+        punto_con_rango = punto.copy()
+        punto_con_rango['valor_min'] = max(0, valor_min)  # No permitir valores negativos
+        punto_con_rango['valor_max'] = valor_max
+        evolucion_con_rangos.append(punto_con_rango)
+    
     return {
         'valor_final': round(valor_final, 2),
         'total_invertido': round(total_invertido, 2),
@@ -125,9 +154,12 @@ def simular_inversion_periodica(df: pd.DataFrame, cantidad_mensual: float,
         'precio_final_proyectado': round(evolución[-1]['precio'], 2),
         'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d'),
         'fecha_fin_proyectada': fechas_futuras[-1].strftime('%Y-%m-%d'),
-        'evolucion': evolución,
+        'evolucion': evolucion_con_rangos,
         'proyeccion_futura': proyeccion_anual,
         'retorno_anual_promedio': round(retorno_anual_promedio, 2),
         'retorno_mensual_promedio': round(retorno_mensual_promedio * 100, 2),
+        'volatilidad_anual': round(volatilidad_anual * 100, 2),
+        'volatilidad_mensual': round(retorno_mensual_std * 100, 2),
+        'años_historia_analizados': round(años_historia, 1),
         'nombre_indice': nombre_indice
     }

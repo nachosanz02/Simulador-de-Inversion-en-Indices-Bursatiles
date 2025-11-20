@@ -19,6 +19,16 @@ INDICES = {
     'DAX 40': '^GDAXI'
 }
 
+# Divisas de cada índice
+DIVISAS = {
+    'S&P 500': 'USD',
+    'FTSE 100': 'GBP',
+    'IBEX 35': 'EUR',
+    'FTSE MIB': 'EUR',
+    'CAC 40': 'EUR',
+    'DAX 40': 'EUR'
+}
+
 
 def descargar_indice(simbolo: str, fecha_inicio: str = None, fecha_fin: str = None) -> pd.DataFrame:
     """

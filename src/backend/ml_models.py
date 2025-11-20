@@ -10,6 +10,14 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import warnings
 warnings.filterwarnings('ignore')
 
+# Prophet para pronósticos de series temporales
+try:
+    from prophet import Prophet
+    PROPHET_AVAILABLE = True
+except ImportError:
+    PROPHET_AVAILABLE = False
+    warnings.warn("Prophet no está disponible. Instala con: pip install prophet")
+
 
 def construir_variables_explicativas(df: pd.DataFrame, ventana_retornos: int = 5, 
                                     ventana_volatilidad: int = 30) -> pd.DataFrame:
@@ -209,4 +217,104 @@ def entrenar_y_predecir_indice(df: pd.DataFrame, nombre_indice: str) -> dict:
         'retorno_predicho': retorno_predicho,
         'features': X.columns.tolist()
     }
+
+
+def entrenar_prophet(df: pd.DataFrame, periodos_futuros: int = 30) -> dict:
+    """
+    Entrena un modelo Prophet para predecir precios futuros
+    
+    Args:
+        df: DataFrame con datos históricos (debe tener índice datetime y columna 'Close')
+        periodos_futuros: Número de días a predecir hacia el futuro
+    
+    Returns:
+        Diccionario con el modelo, predicciones y métricas
+    """
+    if not PROPHET_AVAILABLE:
+        raise ImportError("Prophet no está instalado. Instala con: pip install prophet")
+    
+    # Preparar datos para Prophet (requiere columnas 'ds' y 'y')
+    df_prophet = pd.DataFrame({
+        'ds': df.index,
+        'y': df['Close'].values
+    })
+    
+    # Crear y entrenar modelo Prophet
+    modelo = Prophet(
+        yearly_seasonality=True,
+        weekly_seasonality=True,
+        daily_seasonality=False,
+        seasonality_mode='multiplicative'  # Mejor para datos financieros
+    )
+    
+    modelo.fit(df_prophet)
+    
+    # Crear fechas futuras
+    futuro = modelo.make_future_dataframe(periods=periodos_futuros)
+    
+    # Hacer predicción
+    prediccion = modelo.predict(futuro)
+    
+    # Calcular métricas en datos históricos
+    prediccion_historica = prediccion[prediccion['ds'] <= df.index.max()].copy()
+    prediccion_historica.set_index('ds', inplace=True)
+    
+    # Alinear índices para comparar
+    df_aligned = df.loc[prediccion_historica.index, 'Close']
+    
+    if len(df_aligned) > 0:
+        rmse = np.sqrt(mean_squared_error(df_aligned, prediccion_historica['yhat']))
+        mae = mean_absolute_error(df_aligned, prediccion_historica['yhat'])
+    else:
+        rmse = None
+        mae = None
+    
+    # Obtener predicción futura (últimos periodos_futuros días)
+    prediccion_futura = prediccion[prediccion['ds'] > df.index.max()].copy()
+    
+    return {
+        'modelo': modelo,
+        'prediccion_completa': prediccion,
+        'prediccion_futura': prediccion_futura,
+        'precio_predicho_30d': prediccion_futura['yhat'].iloc[-1] if len(prediccion_futura) > 0 else None,
+        'precio_actual': df['Close'].iloc[-1],
+        'retorno_predicho_30d': ((prediccion_futura['yhat'].iloc[-1] / df['Close'].iloc[-1]) - 1) if len(prediccion_futura) > 0 else None,
+        'metricas': {
+            'RMSE': rmse,
+            'MAE': mae
+        }
+    }
+
+
+def entrenar_ridge_y_prophet(df: pd.DataFrame, nombre_indice: str) -> dict:
+    """
+    Entrena tanto Ridge como Prophet y devuelve ambos resultados
+    
+    Args:
+        df: DataFrame con datos históricos del índice
+        nombre_indice: Nombre del índice
+    
+    Returns:
+        Diccionario con resultados de ambos modelos
+    """
+    resultados = {}
+    
+    # Modelo Ridge (para retornos)
+    try:
+        resultado_ridge = entrenar_y_predecir_indice(df, nombre_indice)
+        resultados['ridge'] = resultado_ridge
+    except Exception as e:
+        resultados['ridge'] = {'error': str(e)}
+    
+    # Modelo Prophet (para precios)
+    try:
+        if PROPHET_AVAILABLE:
+            resultado_prophet = entrenar_prophet(df, periodos_futuros=30)
+            resultados['prophet'] = resultado_prophet
+        else:
+            resultados['prophet'] = {'error': 'Prophet no está instalado'}
+    except Exception as e:
+        resultados['prophet'] = {'error': str(e)}
+    
+    return resultados
 

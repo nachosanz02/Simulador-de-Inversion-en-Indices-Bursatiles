@@ -13,7 +13,7 @@ import os
 # Agregar el directorio raíz al path para importar módulos
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from src.backend import data_collection, preprocessing, simulation, visualization, ml_models, analisis_tecnico, inversion_periodica
+from src.backend import data_collection, preprocessing, simulation, visualization, ml_models, analisis_tecnico, inversion_periodica, utils
 
 
 # Inicializar la aplicación Dash
@@ -28,10 +28,19 @@ INDICES_DISPONIBLES = list(data_collection.INDICES.keys())
 app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
-            html.H1("📈 Simulador de Inversión en Índices Bursátiles", 
-                   className="text-center mb-4"),
-            html.P("Simula inversiones pasadas y futuras en los principales índices bursátiles internacionales",
-                  className="text-center text-muted mb-4")
+            html.Div([
+                html.H1("📈 Simulador de Inversión en Índices Bursátiles", 
+                       className="text-center mb-3"),
+                html.P("Simula inversiones pasadas y futuras en los principales índices bursátiles internacionales",
+                      className="text-center text-muted mb-2"),
+                dbc.Badge("S&P 500 (USD) • FTSE 100 (GBP) • IBEX 35 (EUR) • FTSE MIB (EUR) • CAC 40 (EUR) • DAX 40 (EUR)", 
+                         color="info", className="mb-3"),
+                dbc.Alert([
+                    html.I(className="bi bi-info-circle me-2"),
+                    html.Strong("Nota: "),
+                    "Los índices se muestran en su divisa original. El S&P 500 está en USD y el FTSE 100 en GBP."
+                ], color="info", className="mb-4")
+            ], className="mb-4")
         ])
     ]),
     
@@ -101,14 +110,15 @@ app.layout = dbc.Container([
                                 display_format='YYYY-MM-DD',
                                 className="mb-3"
                             ),
-                            html.Label("Cantidad invertida (€):"),
+                            html.Label("Cantidad invertida:"),
                             dcc.Input(
                                 id='input-cantidad',
                                 type='number',
                                 value=1000,
                                 min=1,
-                                className="form-control mb-3"
+                                className="form-control mb-2"
                             ),
+                            html.Small(id='label-divisa-cantidad', className="text-muted mb-3 d-block"),
                             dbc.Button("Calcular Simulación", id='btn-calcular', 
                                       color="primary", className="w-100")
                         ])
@@ -136,6 +146,11 @@ app.layout = dbc.Container([
                         dbc.CardBody(id='prediccion-ml', children="Carga datos del índice para ver la predicción ML")
                     ])
                 ], md=12)
+            ], className="mt-4"),
+            dbc.Row([
+                dbc.Col([
+                    dcc.Graph(id='grafico-prophet', figure={})
+                ], md=12)
             ], className="mt-4")
         ]),
         
@@ -153,14 +168,15 @@ app.layout = dbc.Container([
                                 value=INDICES_DISPONIBLES[0] if INDICES_DISPONIBLES else None,
                                 className="mb-3"
                             ),
-                            html.Label("Cantidad mensual (€):"),
+                            html.Label("Cantidad mensual:"),
                             dcc.Input(
                                 id='input-cantidad-mensual',
                                 type='number',
                                 value=200,
                                 min=1,
-                                className="form-control mb-3"
+                                className="form-control mb-2"
                             ),
+                            html.Small(id='label-divisa-mensual', className="text-muted mb-3 d-block"),
                             html.Label("Años de inversión:"),
                             dcc.Slider(
                                 id='slider-anos',
@@ -226,6 +242,30 @@ def display_anos(value):
     return html.P(f"Años seleccionados: {value}", className="text-center")
 
 
+# Callback para actualizar etiqueta de divisa en simulación
+@app.callback(
+    Output('label-divisa-cantidad', 'children'),
+    Input('dropdown-indice', 'value')
+)
+def actualizar_label_divisa_cantidad(nombre_indice):
+    if nombre_indice is None:
+        return ""
+    info_divisa = utils.obtener_info_divisa_indice(nombre_indice)
+    return f"Divisa del índice: {info_divisa['nombre']} ({info_divisa['codigo']})"
+
+
+# Callback para actualizar etiqueta de divisa en inversión periódica
+@app.callback(
+    Output('label-divisa-mensual', 'children'),
+    Input('dropdown-indice-periodica', 'value')
+)
+def actualizar_label_divisa_mensual(nombre_indice):
+    if nombre_indice is None:
+        return ""
+    info_divisa = utils.obtener_info_divisa_indice(nombre_indice)
+    return f"Divisa del índice: {info_divisa['nombre']} ({info_divisa['codigo']})"
+
+
 # Callback para cargar múltiples índices
 @app.callback(
     [Output('store-datos-indices', 'data'),
@@ -258,16 +298,24 @@ def cargar_indices_multiples(n_clicks, indices_seleccionados):
             color_señal = "success" if analisis['señal'] == 'COMPRA' else "danger" if analisis['señal'] == 'VENTA' else "warning"
             icono = "🟢" if analisis['señal'] == 'COMPRA' else "🔴" if analisis['señal'] == 'VENTA' else "🟡"
             
+            # Obtener información de divisa
+            info_divisa = utils.obtener_info_divisa_indice(nombre_indice)
+            simbolo_divisa = info_divisa['simbolo']
+            divisa = info_divisa['codigo']
+            
             analisis_html.append(
                 dbc.Card([
-                    dbc.CardHeader(f"{icono} {nombre_indice}"),
+                    dbc.CardHeader([
+                        f"{icono} {nombre_indice} ",
+                        dbc.Badge(divisa, color="info", className="ms-2")
+                    ]),
                     dbc.CardBody([
                         html.H5(f"Señal: {analisis['señal']}", className=f"text-{color_señal}"),
                         html.P(analisis['recomendacion']),
                         html.P([
                             html.Strong("RSI: "), f"{analisis['rsi']:.2f}",
                             html.Br(),
-                            html.Strong("Precio actual: "), f"€{analisis['precio_actual']:,.2f}",
+                            html.Strong("Precio actual: "), f"{simbolo_divisa}{analisis['precio_actual']:,.2f} ({divisa})",
                             html.Br(),
                             html.Strong("Volatilidad anual: "), f"{analisis['volatilidad']:.2f}%"
                         ], className="small")
@@ -350,26 +398,44 @@ def calcular_simulacion(n_clicks, nombre_indice, fecha_inversion, cantidad, dato
         if df.index.tz is not None:
             df.index = df.index.tz_localize(None)
         
+        # Obtener información de divisa
+        info_divisa = utils.obtener_info_divisa_indice(nombre_indice)
+        divisa = info_divisa['codigo']
+        simbolo_divisa = info_divisa['simbolo']
+        
         resultado = simulation.calcular_valor_inversion(df, fecha_inversion, cantidad, nombre_indice)
         df_evolucion = simulation.obtener_evolucion_inversion(df, fecha_inversion, cantidad)
-        fig = visualization.grafico_evolucion_inversion(df_evolucion, nombre_indice)
+        fig = visualization.grafico_evolucion_inversion(df_evolucion, nombre_indice, divisa)
         
         color_retorno = "success" if resultado['retorno_porcentual'] >= 0 else "danger"
         icono = "📈" if resultado['retorno_porcentual'] >= 0 else "📉"
         
+        # Advertencia si la divisa no es EUR
+        advertencia_divisa = None
+        if divisa != 'EUR':
+            advertencia_divisa = dbc.Alert([
+                html.Strong("⚠️ Nota sobre divisas: "),
+                f"El {nombre_indice} cotiza en {info_divisa['nombre']} ({divisa}). ",
+                "Los valores mostrados están en la divisa del índice. ",
+                "Si invertiste en euros, ten en cuenta que también hay riesgo de cambio de divisa."
+            ], color="warning", className="mb-3")
+        
         resultados_html = [
             html.H4(f"{icono} Resultados de la Simulación", className="mb-3"),
+            advertencia_divisa,
             dbc.Row([
                 dbc.Col([
                     html.P("Valor Actual:", className="mb-1"),
-                    html.H3(f"€{resultado['valor_actual']:,.2f}", className="text-primary")
+                    html.H3(f"{simbolo_divisa}{resultado['valor_actual']:,.2f}", className="text-primary"),
+                    html.Small(f"({divisa})", className="text-muted")
                 ], md=4),
                 dbc.Col([
                     html.P("Ganancia/Pérdida:", className="mb-1"),
                     html.H3([
                         resultado['ganancia_perdida'] >= 0 and "+" or "",
-                        f"€{resultado['ganancia_perdida']:,.2f}"
-                    ], className=f"text-{color_retorno}")
+                        f"{simbolo_divisa}{resultado['ganancia_perdida']:,.2f}"
+                    ], className=f"text-{color_retorno}"),
+                    html.Small(f"({divisa})", className="text-muted")
                 ], md=4),
                 dbc.Col([
                     html.P("Retorno:", className="mb-1"),
@@ -381,9 +447,9 @@ def calcular_simulacion(n_clicks, nombre_indice, fecha_inversion, cantidad, dato
             html.P([
                 html.Strong("Fecha de inversión: "), resultado['fecha_inversion'],
                 html.Br(),
-                html.Strong("Precio de compra: "), f"€{resultado['precio_compra']:,.2f}",
+                html.Strong("Precio de compra: "), f"{simbolo_divisa}{resultado['precio_compra']:,.2f} ({divisa})",
                 html.Br(),
-                html.Strong("Precio actual: "), f"€{resultado['precio_actual']:,.2f}",
+                html.Strong("Precio actual: "), f"{simbolo_divisa}{resultado['precio_actual']:,.2f} ({divisa})",
                 html.Br(),
                 html.Strong("Fecha actual: "), resultado['fecha_actual']
             ])
@@ -396,14 +462,15 @@ def calcular_simulacion(n_clicks, nombre_indice, fecha_inversion, cantidad, dato
 
 
 @app.callback(
-    Output('prediccion-ml', 'children'),
+    [Output('prediccion-ml', 'children'),
+     Output('grafico-prophet', 'figure')],
     [Input('store-datos-indice', 'data'),
      Input('dropdown-indice', 'value')]
 )
 def mostrar_prediccion_ml(datos_indice, nombre_indice):
     """Muestra la predicción del modelo ML"""
     if datos_indice is None or nombre_indice is None:
-        return "Carga datos del índice para ver la predicción ML"
+        return "Carga datos del índice para ver la predicción ML", {}
     
     try:
         df = pd.DataFrame(datos_indice)
@@ -419,32 +486,88 @@ def mostrar_prediccion_ml(datos_indice, nombre_indice):
         if df.index.tz is not None:
             df.index = df.index.tz_localize(None)
         
-        resultado_ml = ml_models.entrenar_y_predecir_indice(df, nombre_indice)
+        # Entrenar ambos modelos (Ridge y Prophet)
+        resultados_ml = ml_models.entrenar_ridge_y_prophet(df, nombre_indice)
         
-        retorno_pred = resultado_ml['retorno_predicho']
-        if retorno_pred is not None:
-            color = "success" if retorno_pred >= 0 else "danger"
-            icono = "📈" if retorno_pred >= 0 else "📉"
-            
-            return [
-                html.H5(f"{icono} Predicción del Modelo ML"),
-                html.P([
-                    html.Strong("Retorno estimado para el próximo mes: "),
-                    html.Span(f"{retorno_pred*100:.2f}%", className=f"text-{color}")
-                ]),
-                html.P([
-                    html.Strong("Métricas del modelo:"),
-                    html.Br(),
-                    f"RMSE: {resultado_ml['metricas']['RMSE']:.4f}",
-                    html.Br(),
-                    f"MAE: {resultado_ml['metricas']['MAE']:.4f}"
-                ], className="text-muted small")
-            ]
+        contenido = []
+        
+        # Resultados de Ridge
+        if 'ridge' in resultados_ml and 'retorno_predicho' in resultados_ml['ridge']:
+            resultado_ridge = resultados_ml['ridge']
+            retorno_pred = resultado_ridge['retorno_predicho']
+            if retorno_pred is not None:
+                color = "success" if retorno_pred >= 0 else "danger"
+                icono = "📈" if retorno_pred >= 0 else "📉"
+                
+                contenido.append(
+                    html.Div([
+                        html.H5(f"{icono} Predicción Ridge (Retornos)"),
+                        html.P([
+                            html.Strong("Retorno estimado para el próximo mes: "),
+                            html.Span(f"{retorno_pred*100:.2f}%", className=f"text-{color}")
+                        ]),
+                        html.P([
+                            html.Strong("Métricas:"),
+                            html.Br(),
+                            f"RMSE: {resultado_ridge['metricas']['RMSE']:.4f}",
+                            html.Br(),
+                            f"MAE: {resultado_ridge['metricas']['MAE']:.4f}"
+                        ], className="text-muted small")
+                    ], className="mb-4")
+                )
+        
+        # Resultados de Prophet
+        if 'prophet' in resultados_ml and 'retorno_predicho_30d' in resultados_ml['prophet']:
+            resultado_prophet = resultados_ml['prophet']
+            retorno_prophet = resultado_prophet['retorno_predicho_30d']
+            if retorno_prophet is not None:
+                color = "success" if retorno_prophet >= 0 else "danger"
+                icono = "📈" if retorno_prophet >= 0 else "📉"
+                
+                contenido.append(
+                    html.Div([
+                        html.H5(f"{icono} Predicción Prophet (Precios)"),
+                        html.P([
+                            html.Strong("Precio actual: "), f"€{resultado_prophet['precio_actual']:,.2f}",
+                            html.Br(),
+                            html.Strong("Precio predicho (30 días): "), f"€{resultado_prophet['precio_predicho_30d']:,.2f}",
+                            html.Br(),
+                            html.Strong("Retorno estimado (30 días): "),
+                            html.Span(f"{retorno_prophet*100:.2f}%", className=f"text-{color}")
+                        ]),
+                        html.P([
+                            html.Strong("Métricas:"),
+                            html.Br(),
+                            f"RMSE: {resultado_prophet['metricas']['RMSE']:.4f}" if resultado_prophet['metricas']['RMSE'] else "RMSE: N/A",
+                            html.Br(),
+                            f"MAE: {resultado_prophet['metricas']['MAE']:.4f}" if resultado_prophet['metricas']['MAE'] else "MAE: N/A"
+                        ], className="text-muted small")
+                    ])
+                )
+        elif 'prophet' in resultados_ml and 'error' in resultados_ml['prophet']:
+            contenido.append(
+                html.Div([
+                    html.P(f"⚠ Prophet: {resultados_ml['prophet']['error']}", className="text-warning small")
+                ])
+            )
+        
+        # Crear gráfico de Prophet si está disponible
+        figura_prophet = {}
+        if 'prophet' in resultados_ml and 'error' not in resultados_ml['prophet']:
+            try:
+                figura_prophet = visualization.grafico_prophet_prediccion(
+                    resultados_ml['prophet'], nombre_indice
+                )
+            except Exception as e:
+                figura_prophet = {'data': [], 'layout': {'title': f'Error en gráfico Prophet: {str(e)}'}}
+        
+        if contenido:
+            return contenido, figura_prophet
         else:
-            return "No se pudo generar la predicción ML"
+            return "No se pudo generar la predicción ML", figura_prophet
             
     except Exception as e:
-        return f"Error en predicción ML: {str(e)}"
+        return f"Error en predicción ML: {str(e)}", {}
 
 
 # Callback para inversión periódica
@@ -480,21 +603,44 @@ def calcular_inversion_periodica(n_clicks, nombre_indice, cantidad_mensual, año
         
         color = "success" if resultado['retorno_total'] >= 0 else "danger"
         
+        # Obtener años de historia analizados
+        años_historia_usados = resultado.get('años_historia_analizados', 10)
+        volatilidad_anual = resultado.get('volatilidad_anual', 0)
+        
+        # Obtener información de divisa
+        info_divisa = utils.obtener_info_divisa_indice(nombre_indice)
+        divisa = info_divisa['codigo']
+        simbolo_divisa = info_divisa['simbolo']
+        
+        # Advertencia si la divisa no es EUR
+        advertencia_divisa = None
+        if divisa != 'EUR':
+            advertencia_divisa = dbc.Alert([
+                html.Strong("⚠️ Nota sobre divisas: "),
+                f"El {nombre_indice} cotiza en {info_divisa['nombre']} ({divisa}). ",
+                "Los valores mostrados están en la divisa del índice. ",
+                "Si inviertes en euros, ten en cuenta que también hay riesgo de cambio de divisa."
+            ], color="warning", className="mb-3")
+        
         resultados_html = [
             html.H4("📊 Resultados de la Proyección", className="mb-3"),
+            advertencia_divisa,
             dbc.Row([
                 dbc.Col([
                     html.P("Valor Proyectado:", className="mb-1"),
-                    html.H3(f"€{resultado['valor_final']:,.2f}", className="text-success")
+                    html.H3(f"{simbolo_divisa}{resultado['valor_final']:,.2f}", className="text-success"),
+                    html.Small(f"({divisa})", className="text-muted")
                 ], md=4),
                 dbc.Col([
                     html.P("Tu Contribución:", className="mb-1"),
-                    html.H3(f"€{resultado['total_invertido']:,.2f}", className="text-primary")
+                    html.H3(f"{simbolo_divisa}{resultado['total_invertido']:,.2f}", className="text-primary"),
+                    html.Small(f"({divisa})", className="text-muted")
                 ], md=4),
                 dbc.Col([
                     html.P("Ganancia Proyectada:", className="mb-1"),
-                    html.H3(f"€{resultado['ganancia_total']:,.2f}", 
-                           className=f"text-{color}")
+                    html.H3(f"{simbolo_divisa}{resultado['ganancia_total']:,.2f}", 
+                           className=f"text-{color}"),
+                    html.Small(f"({divisa})", className="text-muted")
                 ], md=4)
             ]),
             html.Hr(),
@@ -503,8 +649,24 @@ def calcular_inversion_periodica(n_clicks, nombre_indice, cantidad_mensual, año
                 html.Br(),
                 html.Strong("Retorno anual promedio: "), f"{resultado['retorno_anual_promedio']:.2f}%",
                 html.Br(),
-                html.Strong("Período: "), f"{resultado['fecha_inicio']} a {resultado['fecha_fin']}"
-            ])
+                html.Strong("Período: "), f"{resultado['fecha_inicio']} a {resultado['fecha_fin_proyectada']}"
+            ]),
+            html.Hr(),
+            dbc.Alert([
+                html.H6("ℹ️ Sobre el Rango de Incertidumbre", className="mb-2"),
+                html.P([
+                    f"Basado en el análisis de los últimos {años_historia_usados:.1f} años, ",
+                    f"el {resultado['nombre_indice']} ha tenido una volatilidad anual promedio del ",
+                    html.Strong(f"{volatilidad_anual:.2f}%"),
+                    ". ",
+                    "El área sombreada en el gráfico muestra el rango de posibles valores (68% de confianza) basado en esta volatilidad histórica. ",
+                    html.Br(),
+                    html.Small([
+                        "Nota: La banda inferior es más pequeña (0.7x) porque los valores no pueden ser negativos, ",
+                        "mientras que la banda superior es más amplia (1.3x) ya que el crecimiento potencial es ilimitado."
+                    ], className="text-muted")
+                ])
+            ], color="info", className="mt-3")
         ]
         
         return resultados_html, fig
