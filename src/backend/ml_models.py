@@ -10,6 +10,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import warnings
 warnings.filterwarnings('ignore')
 
+<<<<<<< HEAD
 # Prophet para pronósticos de series temporales
 try:
     from prophet import Prophet
@@ -18,6 +19,8 @@ except ImportError:
     PROPHET_AVAILABLE = False
     warnings.warn("Prophet no está disponible. Instala con: pip install prophet")
 
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 
 def construir_variables_explicativas(df: pd.DataFrame, ventana_retornos: int = 5, 
                                     ventana_volatilidad: int = 30) -> pd.DataFrame:
@@ -218,6 +221,7 @@ def entrenar_y_predecir_indice(df: pd.DataFrame, nombre_indice: str) -> dict:
         'features': X.columns.tolist()
     }
 
+<<<<<<< HEAD
 
 def entrenar_prophet(df: pd.DataFrame, periodos_futuros: int = 30) -> dict:
     """
@@ -318,3 +322,5 @@ def entrenar_ridge_y_prophet(df: pd.DataFrame, nombre_indice: str) -> dict:
     
     return resultados
 
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f

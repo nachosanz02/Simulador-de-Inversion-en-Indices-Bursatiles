@@ -14,7 +14,10 @@ dash-bootstrap-components>=1.5.0
 
 # Machine Learning
 scikit-learn>=1.3.0
+<<<<<<< HEAD
 prophet>=1.1.4
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 
 # Utilidades
 python-dateutil>=2.8.2

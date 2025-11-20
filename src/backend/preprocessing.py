@@ -35,10 +35,13 @@ def limpiar_datos(df: pd.DataFrame, nombre_indice: str = "") -> pd.DataFrame:
     if not isinstance(df_limpio.index, pd.DatetimeIndex):
         df_limpio.index = pd.to_datetime(df_limpio.index)
     
+<<<<<<< HEAD
     # Asegurar que el índice sea tz-naive (sin timezone)
     if df_limpio.index.tz is not None:
         df_limpio.index = df_limpio.index.tz_localize(None)
     
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     # Ordenar por fecha
     df_limpio = df_limpio.sort_index()
     

@@ -19,6 +19,7 @@ INDICES = {
     'DAX 40': '^GDAXI'
 }
 
+<<<<<<< HEAD
 # Divisas de cada índice
 DIVISAS = {
     'S&P 500': 'USD',
@@ -29,6 +30,8 @@ DIVISAS = {
     'DAX 40': 'EUR'
 }
 
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 
 def descargar_indice(simbolo: str, fecha_inicio: str = None, fecha_fin: str = None) -> pd.DataFrame:
     """

@@ -41,7 +41,11 @@ def ejecutar_dashboard():
     print("Presiona Ctrl+C para detener el servidor")
     print("=" * 60 + "\n")
     
+<<<<<<< HEAD
     app.run(debug=True, host='127.0.0.1', port=8050)
+=======
+    app.run_server(debug=True, host='127.0.0.1', port=8050)
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 
 
 if __name__ == "__main__":

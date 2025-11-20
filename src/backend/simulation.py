@@ -28,6 +28,7 @@ def calcular_valor_inversion(df: pd.DataFrame, fecha_inversion: str,
         - fecha_inversion: Fecha de inversión
         - fecha_actual: Fecha más reciente disponible
     """
+<<<<<<< HEAD
     # Convertir fecha a datetime y asegurar que sea tz-naive
     fecha_inv = pd.to_datetime(fecha_inversion)
     if fecha_inv.tz is not None:
@@ -37,6 +38,10 @@ def calcular_valor_inversion(df: pd.DataFrame, fecha_inversion: str,
     if df.index.tz is not None:
         df = df.copy()
         df.index = df.index.tz_localize(None)
+=======
+    # Convertir fecha a datetime
+    fecha_inv = pd.to_datetime(fecha_inversion)
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     
     # Obtener la fecha más reciente disponible
     fecha_actual = df.index.max()
@@ -99,6 +104,7 @@ def obtener_evolucion_inversion(df: pd.DataFrame, fecha_inversion: str,
         DataFrame con la evolución del valor de la inversión
     """
     fecha_inv = pd.to_datetime(fecha_inversion)
+<<<<<<< HEAD
     # Asegurar que sea tz-naive
     if fecha_inv.tz is not None:
         fecha_inv = fecha_inv.tz_localize(None)
@@ -107,6 +113,8 @@ def obtener_evolucion_inversion(df: pd.DataFrame, fecha_inversion: str,
     if df.index.tz is not None:
         df = df.copy()
         df.index = df.index.tz_localize(None)
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     
     # Filtrar datos desde la fecha de inversión
     datos_desde_inversion = df[df.index >= fecha_inv].copy()

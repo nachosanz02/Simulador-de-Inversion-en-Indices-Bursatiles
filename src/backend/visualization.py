@@ -5,10 +5,13 @@ Módulo para la visualización de datos de índices bursátiles e inversiones
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
+<<<<<<< HEAD
 import numpy as np
 
 
 from . import utils
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 
 
 def grafico_evolucion_indice(df: pd.DataFrame, nombre_indice: str) -> go.Figure:
@@ -23,9 +26,12 @@ def grafico_evolucion_indice(df: pd.DataFrame, nombre_indice: str) -> go.Figure:
         Figura de Plotly
     """
     fig = go.Figure()
+<<<<<<< HEAD
     info_divisa = utils.obtener_info_divisa_indice(nombre_indice)
     divisa = info_divisa['codigo']
     simbolo_divisa = info_divisa['simbolo']
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     
     fig.add_trace(go.Scatter(
         x=df.index,
@@ -35,6 +41,7 @@ def grafico_evolucion_indice(df: pd.DataFrame, nombre_indice: str) -> go.Figure:
         line=dict(color='#1f77b4', width=2),
         hovertemplate='<b>%{fullData.name}</b><br>' +
                       'Fecha: %{x}<br>' +
+<<<<<<< HEAD
                       f'Precio: {simbolo_divisa}%{{y:,.2f}}<extra></extra>'
     ))
     
@@ -42,6 +49,15 @@ def grafico_evolucion_indice(df: pd.DataFrame, nombre_indice: str) -> go.Figure:
         title=f'Evolución Histórica del {nombre_indice} ({divisa})',
         xaxis_title='Fecha',
         yaxis_title=f'Precio de Cierre ({divisa})',
+=======
+                      'Precio: €%{y:,.2f}<extra></extra>'
+    ))
+    
+    fig.update_layout(
+        title=f'Evolución Histórica del {nombre_indice}',
+        xaxis_title='Fecha',
+        yaxis_title='Precio de Cierre (€)',
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
         hovermode='x unified',
         template='plotly_white',
         height=500
@@ -50,6 +66,7 @@ def grafico_evolucion_indice(df: pd.DataFrame, nombre_indice: str) -> go.Figure:
     return fig
 
 
+<<<<<<< HEAD
 def grafico_comparacion_indices_multiple(datos_indices: dict, indices_seleccionados: list) -> go.Figure:
     """
     Crea un gráfico comparativo de múltiples índices seleccionados (normalizados)
@@ -134,19 +151,26 @@ def grafico_comparacion_indices_multiple(datos_indices: dict, indices_selecciona
 
 
 def grafico_evolucion_inversion(df_evolucion: pd.DataFrame, nombre_indice: str, divisa_inversion: str = None) -> go.Figure:
+=======
+def grafico_evolucion_inversion(df_evolucion: pd.DataFrame, nombre_indice: str) -> go.Figure:
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     """
     Crea un gráfico con la evolución del valor de una inversión
     
     Args:
         df_evolucion: DataFrame con la evolución de la inversión (debe tener 'Valor_Inversion')
         nombre_indice: Nombre del índice
+<<<<<<< HEAD
         divisa_inversion: Divisa de la inversión (si es None, usa la del índice)
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     
     Returns:
         Figura de Plotly
     """
     fig = go.Figure()
     
+<<<<<<< HEAD
     if divisa_inversion is None:
         info_divisa = utils.obtener_info_divisa_indice(nombre_indice)
         divisa = info_divisa['codigo']
@@ -156,6 +180,8 @@ def grafico_evolucion_inversion(df_evolucion: pd.DataFrame, nombre_indice: str, 
         divisa = divisa_inversion
         simbolo_divisa = {'USD': '$', 'EUR': '€', 'GBP': '£'}.get(divisa, divisa)
     
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     # Línea del valor de la inversión
     fig.add_trace(go.Scatter(
         x=df_evolucion.index,
@@ -165,7 +191,11 @@ def grafico_evolucion_inversion(df_evolucion: pd.DataFrame, nombre_indice: str, 
         line=dict(color='#2ca02c', width=2),
         hovertemplate='<b>Valor de la Inversión</b><br>' +
                       'Fecha: %{x}<br>' +
+<<<<<<< HEAD
                       f'Valor: {simbolo_divisa}%{{y:,.2f}}<br>' +
+=======
+                      'Valor: €%{y:,.2f}<br>' +
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
                       'Retorno: %{customdata:.2f}%<extra></extra>',
         customdata=df_evolucion['Retorno_Porcentual']
     ))
@@ -176,14 +206,24 @@ def grafico_evolucion_inversion(df_evolucion: pd.DataFrame, nombre_indice: str, 
         y=cantidad_invertida,
         line_dash="dash",
         line_color="gray",
+<<<<<<< HEAD
         annotation_text=f"Inversión inicial: {simbolo_divisa}{cantidad_invertida:,.2f}",
+=======
+        annotation_text=f"Inversión inicial: €{cantidad_invertida:,.2f}",
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
         annotation_position="right"
     )
     
     fig.update_layout(
+<<<<<<< HEAD
         title=f'Evolución de la Inversión en {nombre_indice} ({divisa})',
         xaxis_title='Fecha',
         yaxis_title=f'Valor ({divisa})',
+=======
+        title=f'Evolución de la Inversión en {nombre_indice}',
+        xaxis_title='Fecha',
+        yaxis_title='Valor (€)',
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
         hovermode='x unified',
         template='plotly_white',
         height=500
@@ -192,6 +232,7 @@ def grafico_evolucion_inversion(df_evolucion: pd.DataFrame, nombre_indice: str, 
     return fig
 
 
+<<<<<<< HEAD
 def grafico_inversion_periodica(resultado_simulacion: dict) -> go.Figure:
     """
     Crea un gráfico de proyección de inversión periódica FUTURA desde hoy
@@ -341,6 +382,8 @@ def grafico_inversion_periodica(resultado_simulacion: dict) -> go.Figure:
     return fig
 
 
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 def grafico_comparacion_indices(datos_indices: dict) -> go.Figure:
     """
     Crea un gráfico comparativo de la evolución de todos los índices (normalizados)
@@ -385,6 +428,7 @@ def grafico_comparacion_indices(datos_indices: dict) -> go.Figure:
     return fig
 
 
+<<<<<<< HEAD
 def grafico_prophet_prediccion(resultado_prophet: dict, nombre_indice: str) -> go.Figure:
     """
     Crea un gráfico con las predicciones de Prophet mostrando datos históricos,
@@ -528,6 +572,8 @@ def grafico_prophet_prediccion(resultado_prophet: dict, nombre_indice: str) -> g
     return fig
 
 
+=======
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 def grafico_retornos_diarios(df: pd.DataFrame, nombre_indice: str) -> go.Figure:
     """
     Crea un gráfico de barras con los retornos diarios del índice
@@ -566,3 +612,7 @@ def grafico_retornos_diarios(df: pd.DataFrame, nombre_indice: str) -> go.Figure:
     )
     
     return fig
+<<<<<<< HEAD
+=======
+
+>>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
