@@ -5,7 +5,6 @@ Proyecta inversiones futuras desde hoy
 
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
 
 
 def simular_inversion_periodica(df: pd.DataFrame, cantidad_mensual: float, 

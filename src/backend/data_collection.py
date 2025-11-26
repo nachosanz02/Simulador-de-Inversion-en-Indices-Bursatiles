@@ -5,7 +5,6 @@ desde Yahoo Finance
 
 import yfinance as yf
 import pandas as pd
-from datetime import datetime
 import os
 
 
@@ -19,7 +18,6 @@ INDICES = {
     'DAX 40': '^GDAXI'
 }
 
-<<<<<<< HEAD
 # Divisas de cada índice
 DIVISAS = {
     'S&P 500': 'USD',
@@ -30,8 +28,6 @@ DIVISAS = {
     'DAX 40': 'EUR'
 }
 
-=======
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 
 def descargar_indice(simbolo: str, fecha_inicio: str = None, fecha_fin: str = None) -> pd.DataFrame:
     """
@@ -118,6 +114,144 @@ def cargar_datos_desde_csv(nombre_indice: str) -> pd.DataFrame:
         return datos
     else:
         raise FileNotFoundError(f"No se encontró el archivo: {ruta}")
+
+
+def descargar_tipo_cambio(par_divisas: str, fecha_inicio: str = None, fecha_fin: str = None) -> pd.Series:
+    """
+    Descarga tipo de cambio histórico desde Yahoo Finance
+    
+    Args:
+        par_divisas: Par de divisas en formato 'EURUSD' o 'EURGBP'
+        fecha_inicio: Fecha de inicio en formato 'YYYY-MM-DD'
+        fecha_fin: Fecha de fin en formato 'YYYY-MM-DD'
+    
+    Returns:
+        Series con los tipos de cambio históricos (Close), con índice sin timezone
+    """
+    # Yahoo Finance usa el formato 'EURUSD=X' para pares de divisas
+    simbolo = f"{par_divisas}=X"
+    
+    try:
+        ticker = yf.Ticker(simbolo)
+        
+        if fecha_inicio is None:
+            datos = ticker.history(period="max")
+        else:
+            datos = ticker.history(start=fecha_inicio, end=fecha_fin)
+        
+        if not datos.empty:
+            # Asegurar que el índice no tenga timezone
+            if datos.index.tz is not None:
+                datos.index = datos.index.tz_localize(None)
+            
+            return datos['Close']
+        else:
+            # Intentar con formato alternativo si el primero falla
+            print(f"No se encontraron datos para {simbolo}, intentando formato alternativo...")
+            return pd.Series(dtype=float)
+    except Exception as e:
+        print(f"Error descargando tipo de cambio {par_divisas} ({simbolo}): {str(e)}")
+        # Intentar con símbolos alternativos
+        simbolos_alternativos = {
+            'EURUSD': ['EURUSD=X', 'EUR=X', 'EURUSD'],
+            'EURGBP': ['EURGBP=X', 'EURGBP'],
+            'USD': ['EURUSD=X'],  # Para USD, usamos EURUSD y luego invertimos
+            'GBP': ['EURGBP=X']   # Para GBP, usamos EURGBP y luego invertimos
+        }
+        
+        if par_divisas in simbolos_alternativos:
+            for simbolo_alt in simbolos_alternativos[par_divisas]:
+                try:
+                    ticker = yf.Ticker(simbolo_alt)
+                    if fecha_inicio is None:
+                        datos = ticker.history(period="max")
+                    else:
+                        datos = ticker.history(start=fecha_inicio, end=fecha_fin)
+                    
+                    if not datos.empty:
+                        if datos.index.tz is not None:
+                            datos.index = datos.index.tz_localize(None)
+                        return datos['Close']
+                except:
+                    continue
+        
+        return pd.Series(dtype=float)
+
+
+def obtener_tipos_cambio_eur(fecha_inicio: str = None, fecha_fin: str = None) -> dict:
+    """
+    Obtiene tipos de cambio históricos para convertir a EUR
+    
+    Args:
+        fecha_inicio: Fecha de inicio en formato 'YYYY-MM-DD'
+        fecha_fin: Fecha de fin en formato 'YYYY-MM-DD'
+    
+    Returns:
+        Diccionario con tipos de cambio:
+        - 'EURUSD': cuántos USD por 1 EUR (Series)
+        - 'EURGBP': cuántos GBP por 1 EUR (Series)
+    """
+    tipos_cambio = {}
+    
+    # Intentar descargar EUR/USD (cuántos USD por 1 EUR)
+    try:
+        ticker = yf.Ticker('EURUSD=X')
+        if fecha_inicio is None:
+            datos = ticker.history(period="max")
+        else:
+            datos = ticker.history(start=fecha_inicio, end=fecha_fin)
+        
+        if not datos.empty:
+            if datos.index.tz is not None:
+                datos.index = datos.index.tz_localize(None)
+            tipos_cambio['EURUSD'] = datos['Close']
+    except Exception as e:
+        # Si falla, intentar con el método inverso
+        try:
+            ticker = yf.Ticker('USDEUR=X')
+            if fecha_inicio is None:
+                datos = ticker.history(period="max")
+            else:
+                datos = ticker.history(start=fecha_inicio, end=fecha_fin)
+            
+            if not datos.empty:
+                if datos.index.tz is not None:
+                    datos.index = datos.index.tz_localize(None)
+                # Invertir: si USDEUR = X, entonces EURUSD = 1/X
+                tipos_cambio['EURUSD'] = 1 / datos['Close']
+        except:
+            pass
+    
+    # Intentar descargar EUR/GBP (cuántos GBP por 1 EUR)
+    try:
+        ticker = yf.Ticker('EURGBP=X')
+        if fecha_inicio is None:
+            datos = ticker.history(period="max")
+        else:
+            datos = ticker.history(start=fecha_inicio, end=fecha_fin)
+        
+        if not datos.empty:
+            if datos.index.tz is not None:
+                datos.index = datos.index.tz_localize(None)
+            tipos_cambio['EURGBP'] = datos['Close']
+    except Exception as e:
+        # Si falla, intentar con el método inverso
+        try:
+            ticker = yf.Ticker('GBPEUR=X')
+            if fecha_inicio is None:
+                datos = ticker.history(period="max")
+            else:
+                datos = ticker.history(start=fecha_inicio, end=fecha_fin)
+            
+            if not datos.empty:
+                if datos.index.tz is not None:
+                    datos.index = datos.index.tz_localize(None)
+                # Invertir: si GBPEUR = X, entonces EURGBP = 1/X
+                tipos_cambio['EURGBP'] = 1 / datos['Close']
+        except:
+            pass
+    
+    return tipos_cambio
 
 
 if __name__ == "__main__":

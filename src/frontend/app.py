@@ -13,11 +13,7 @@ import os
 # Agregar el directorio raíz al path para importar módulos
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-<<<<<<< HEAD
 from src.backend import data_collection, preprocessing, simulation, visualization, ml_models, analisis_tecnico, inversion_periodica, utils
-=======
-from src.backend import data_collection, preprocessing, simulation, visualization, ml_models
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 
 
 # Inicializar la aplicación Dash
@@ -32,7 +28,6 @@ INDICES_DISPONIBLES = list(data_collection.INDICES.keys())
 app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
-<<<<<<< HEAD
             html.Div([
                 html.H1("📈 Simulador de Inversión en Índices Bursátiles", 
                        className="text-center mb-3"),
@@ -88,7 +83,17 @@ app.layout = dbc.Container([
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Análisis Técnico - Señales de Compra/Venta"),
-                        dbc.CardBody(id='analisis-tecnico', children="Selecciona índices y haz clic en 'Cargar Índices'")
+                        dbc.CardBody([
+                            dbc.Alert([
+                                html.I(className="bi bi-info-circle me-2"),
+                                html.Strong("¿Qué es el RSI? "),
+                                "El RSI (Relative Strength Index o Índice de Fuerza Relativa) es un indicador técnico que mide la velocidad y magnitud de los cambios de precio. ",
+                                "Va de 0 a 100: valores por encima de 70 sugieren que el activo está 'sobrecomprado' (podría bajar), ",
+                                "y valores por debajo de 30 sugieren que está 'sobrevendido' (podría subir). ",
+                                "Este indicador ayuda a identificar posibles momentos de compra o venta."
+                            ], color="info", className="mb-3"),
+                            html.Div(id='analisis-tecnico', children="Selecciona índices y haz clic en 'Cargar Índices'")
+                        ])
                     ])
                 ], md=12)
             ], className="mt-4")
@@ -217,85 +222,10 @@ app.layout = dbc.Container([
     dcc.Store(id='store-datos-indices', data={}),
     dcc.Store(id='store-datos-indice', data=None),
     dcc.Store(id='store-resultado-simulacion', data=None)
-=======
-            html.H1("📈 Simulador de Inversión en Índices Bursátiles", 
-                   className="text-center mb-4"),
-            html.P("Simula inversiones pasadas en los principales índices bursátiles internacionales",
-                  className="text-center text-muted mb-4")
-        ])
-    ]),
-    
-    dbc.Row([
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("Parámetros de Simulación"),
-                dbc.CardBody([
-                    html.Label("Selecciona el índice:"),
-                    dcc.Dropdown(
-                        id='dropdown-indice',
-                        options=[{'label': idx, 'value': idx} for idx in INDICES_DISPONIBLES],
-                        value=INDICES_DISPONIBLES[0] if INDICES_DISPONIBLES else None,
-                        className="mb-3"
-                    ),
-                    
-                    html.Label("Fecha de inversión:"),
-                    dcc.DatePickerSingle(
-                        id='date-picker',
-                        date=datetime.now() - timedelta(days=365*5),
-                        display_format='YYYY-MM-DD',
-                        className="mb-3"
-                    ),
-                    
-                    html.Label("Cantidad invertida (€):"),
-                    dcc.Input(
-                        id='input-cantidad',
-                        type='number',
-                        value=1000,
-                        min=1,
-                        className="form-control mb-3"
-                    ),
-                    
-                    dbc.Button("Calcular Simulación", id='btn-calcular', 
-                              color="primary", className="w-100")
-                ])
-            ], className="mb-4")
-        ], md=4),
-        
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("Resultados de la Simulación"),
-                dbc.CardBody(id='resultados-simulacion')
-            ], className="mb-4")
-        ], md=8)
-    ]),
-    
-    dbc.Row([
-        dbc.Col([
-            dcc.Graph(id='grafico-evolucion-indice')
-        ], md=6),
-        dbc.Col([
-            dcc.Graph(id='grafico-evolucion-inversion')
-        ], md=6)
-    ]),
-    
-    dbc.Row([
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("Predicción ML"),
-                dbc.CardBody(id='prediccion-ml')
-            ])
-        ], md=12)
-    ], className="mt-4"),
-    
-    # Almacenamiento para datos
-    dcc.Store(id='store-datos-indice'),
-    dcc.Store(id='store-resultado-simulacion')
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     
 ], fluid=True)
 
 
-<<<<<<< HEAD
 # Callback para cambiar tabs - mostrar/ocultar divs
 @app.callback(
     [Output('div-comparacion', 'style'),
@@ -383,6 +313,9 @@ def cargar_indices_multiples(n_clicks, indices_seleccionados):
             simbolo_divisa = info_divisa['simbolo']
             divisa = info_divisa['codigo']
             
+            # Obtener información del índice
+            info_indice = utils.obtener_info_indice(nombre_indice)
+            
             analisis_html.append(
                 dbc.Card([
                     dbc.CardHeader([
@@ -390,6 +323,11 @@ def cargar_indices_multiples(n_clicks, indices_seleccionados):
                         dbc.Badge(divisa, color="info", className="ms-2")
                     ]),
                     dbc.CardBody([
+                        html.P([
+                            html.Strong("📍 Origen: "), f"{info_indice['pais']}",
+                            html.Br(),
+                            html.Small(info_indice['descripcion'], className="text-muted")
+                        ], className="mb-3"),
                         html.H5(f"Señal: {analisis['señal']}", className=f"text-{color_señal}"),
                         html.P(analisis['recomendacion']),
                         html.P([
@@ -418,10 +356,7 @@ def cargar_indices_multiples(n_clicks, indices_seleccionados):
         return {}, {'data': [], 'layout': {'title': f'Error: {str(e)}'}}, f"Error: {str(e)}"
 
 
-# Callbacks para simulación de inversión (mantener los existentes)
-=======
-# Callbacks
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
+# Callbacks para simulación de inversión
 @app.callback(
     [Output('store-datos-indice', 'data'),
      Output('grafico-evolucion-indice', 'figure')],
@@ -433,38 +368,20 @@ def cargar_datos_indice(nombre_indice):
         return None, {}
     
     try:
-<<<<<<< HEAD
         df = preprocessing.cargar_datos_procesados(nombre_indice)
         fig = visualization.grafico_evolucion_indice(df, nombre_indice)
         df_con_indice = df.reset_index()
         return df_con_indice.to_dict('records'), fig
     except FileNotFoundError:
-=======
-        # Intentar cargar datos procesados
-        df = preprocessing.cargar_datos_procesados(nombre_indice)
-        fig = visualization.grafico_evolucion_indice(df, nombre_indice)
-        return df.to_dict('records'), fig
-    except FileNotFoundError:
-        # Si no existen datos procesados, intentar descargar
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
         try:
             simbolo = data_collection.INDICES[nombre_indice]
             df = data_collection.descargar_indice(simbolo)
             df = preprocessing.limpiar_datos(df, nombre_indice)
             fig = visualization.grafico_evolucion_indice(df, nombre_indice)
-<<<<<<< HEAD
             df_con_indice = df.reset_index()
             return df_con_indice.to_dict('records'), fig
         except Exception as e:
             return None, {'data': [], 'layout': {'title': f'Error: {str(e)}'}}
-=======
-            return df.to_dict('records'), fig
-        except Exception as e:
-            return None, {
-                'data': [],
-                'layout': {'title': f'Error: {str(e)}'}
-            }
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
 
 
 @app.callback(
@@ -486,7 +403,6 @@ def calcular_simulacion(n_clicks, nombre_indice, fecha_inversion, cantidad, dato
         return "Error: No hay datos disponibles del índice seleccionado", None, {}
     
     try:
-<<<<<<< HEAD
         df = pd.DataFrame(datos_indice)
         if 'Date' in df.columns:
             df['Date'] = pd.to_datetime(df['Date'])
@@ -530,48 +446,14 @@ def calcular_simulacion(n_clicks, nombre_indice, fecha_inversion, cantidad, dato
                     html.P("Valor Actual:", className="mb-1"),
                     html.H3(f"{simbolo_divisa}{resultado['valor_actual']:,.2f}", className="text-primary"),
                     html.Small(f"({divisa})", className="text-muted")
-=======
-        # Convertir datos de vuelta a DataFrame
-        df = pd.DataFrame(datos_indice)
-        df.index = pd.to_datetime(df.index)
-        
-        # Calcular simulación
-        resultado = simulation.calcular_valor_inversion(
-            df, fecha_inversion, cantidad, nombre_indice
-        )
-        
-        # Obtener evolución
-        df_evolucion = simulation.obtener_evolucion_inversion(
-            df, fecha_inversion, cantidad
-        )
-        
-        # Crear gráfico
-        fig = visualization.grafico_evolucion_inversion(df_evolucion, nombre_indice)
-        
-        # Formatear resultados
-        color_retorno = "success" if resultado['retorno_porcentual'] >= 0 else "danger"
-        icono = "📈" if resultado['retorno_porcentual'] >= 0 else "📉"
-        
-        resultados_html = [
-            html.H4(f"{icono} Resultados de la Simulación", className="mb-3"),
-            dbc.Row([
-                dbc.Col([
-                    html.P("Valor Actual:", className="mb-1"),
-                    html.H3(f"€{resultado['valor_actual']:,.2f}", className="text-primary")
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
                 ], md=4),
                 dbc.Col([
                     html.P("Ganancia/Pérdida:", className="mb-1"),
                     html.H3([
                         resultado['ganancia_perdida'] >= 0 and "+" or "",
-<<<<<<< HEAD
                         f"{simbolo_divisa}{resultado['ganancia_perdida']:,.2f}"
                     ], className=f"text-{color_retorno}"),
                     html.Small(f"({divisa})", className="text-muted")
-=======
-                        f"€{resultado['ganancia_perdida']:,.2f}"
-                    ], className=f"text-{color_retorno}")
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
                 ], md=4),
                 dbc.Col([
                     html.P("Retorno:", className="mb-1"),
@@ -583,15 +465,9 @@ def calcular_simulacion(n_clicks, nombre_indice, fecha_inversion, cantidad, dato
             html.P([
                 html.Strong("Fecha de inversión: "), resultado['fecha_inversion'],
                 html.Br(),
-<<<<<<< HEAD
                 html.Strong("Precio de compra: "), f"{simbolo_divisa}{resultado['precio_compra']:,.2f} ({divisa})",
                 html.Br(),
                 html.Strong("Precio actual: "), f"{simbolo_divisa}{resultado['precio_actual']:,.2f} ({divisa})",
-=======
-                html.Strong("Precio de compra: "), f"€{resultado['precio_compra']:,.2f}",
-                html.Br(),
-                html.Strong("Precio actual: "), f"€{resultado['precio_actual']:,.2f}",
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
                 html.Br(),
                 html.Strong("Fecha actual: "), resultado['fecha_actual']
             ])
@@ -604,39 +480,56 @@ def calcular_simulacion(n_clicks, nombre_indice, fecha_inversion, cantidad, dato
 
 
 @app.callback(
-<<<<<<< HEAD
     [Output('prediccion-ml', 'children'),
      Output('grafico-prophet', 'figure')],
-=======
-    Output('prediccion-ml', 'children'),
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     [Input('store-datos-indice', 'data'),
      Input('dropdown-indice', 'value')]
 )
 def mostrar_prediccion_ml(datos_indice, nombre_indice):
     """Muestra la predicción del modelo ML"""
     if datos_indice is None or nombre_indice is None:
-<<<<<<< HEAD
         return "Carga datos del índice para ver la predicción ML", {}
     
     try:
-        df = pd.DataFrame(datos_indice)
-        if 'Date' in df.columns:
-            df['Date'] = pd.to_datetime(df['Date'])
-            df.set_index('Date', inplace=True)
-        elif 'index' in df.columns:
-            df['index'] = pd.to_datetime(df['index'])
-            df.set_index('index', inplace=True)
-        else:
-            df.index = pd.to_datetime(df.index)
+        # FORZAR descarga de datos actualizados para Prophet (no usar CSV antiguos)
+        simbolo = data_collection.INDICES[nombre_indice]
+        df_actualizado = data_collection.descargar_indice(simbolo)
+        df_actualizado = preprocessing.limpiar_datos(df_actualizado, nombre_indice)
         
-        if df.index.tz is not None:
-            df.index = df.index.tz_localize(None)
+        if df_actualizado.empty:
+            return "Error: No se pudieron descargar datos actualizados", {}
+        
+        # Calcular días hasta el 26 de diciembre desde hoy
+        fecha_hoy = df_actualizado.index.max()
+        año_actual = fecha_hoy.year
+        fecha_objetivo = pd.Timestamp(f'{año_actual}-12-26')  # 26 de diciembre del año actual
+        
+        # Si ya pasó el 26 de diciembre, usar el del año siguiente
+        if fecha_objetivo <= fecha_hoy:
+            fecha_objetivo = pd.Timestamp(f'{año_actual + 1}-12-26')
+        
+        dias_hasta_objetivo = (fecha_objetivo - fecha_hoy).days
+        
+        # Asegurar al menos 30 días de predicción
+        periodos_futuros = max(30, dias_hasta_objetivo)
         
         # Entrenar ambos modelos (Ridge y Prophet)
-        resultados_ml = ml_models.entrenar_ridge_y_prophet(df, nombre_indice)
+        # Usar df_actualizado para Prophet, pero mantener df original para Ridge si es necesario
+        resultados_ml = ml_models.entrenar_ridge_y_prophet(df_actualizado, nombre_indice, periodos_futuros=periodos_futuros)
         
-        contenido = []
+        # Obtener información de divisa para mostrar correctamente
+        info_divisa = utils.obtener_info_divisa_indice(nombre_indice)
+        simbolo_divisa = info_divisa['simbolo']
+        
+        contenido = [
+            dbc.Alert([
+                html.I(className="bi bi-lightbulb me-2"),
+                html.Strong("Predicciones con Inteligencia Artificial: "),
+                "Estas predicciones utilizan modelos de aprendizaje automático que analizan patrones históricos. ",
+                "Son estimaciones basadas en datos pasados y no garantizan resultados futuros. ",
+                "Úsalas como una herramienta de apoyo para tomar decisiones informadas."
+            ], color="warning", className="mb-3")
+        ]
         
         # Resultados de Ridge
         if 'ridge' in resultados_ml and 'retorno_predicho' in resultados_ml['ridge']:
@@ -649,6 +542,13 @@ def mostrar_prediccion_ml(datos_indice, nombre_indice):
                 contenido.append(
                     html.Div([
                         html.H5(f"{icono} Predicción Ridge (Retornos)"),
+                        dbc.Alert([
+                            html.I(className="bi bi-info-circle me-2"),
+                            html.Strong("¿Qué es Ridge? "),
+                            "Ridge es un modelo de aprendizaje automático que analiza patrones históricos de retornos (ganancias/pérdidas) del índice. ",
+                            "Utiliza información como retornos pasados y volatilidad para predecir el retorno esperado en el próximo mes. ",
+                            "Es útil para estimar si el índice subirá o bajará en el corto plazo."
+                        ], color="info", className="mb-2"),
                         html.P([
                             html.Strong("Retorno estimado para el próximo mes: "),
                             html.Span(f"{retorno_pred*100:.2f}%", className=f"text-{color}")
@@ -674,10 +574,18 @@ def mostrar_prediccion_ml(datos_indice, nombre_indice):
                 contenido.append(
                     html.Div([
                         html.H5(f"{icono} Predicción Prophet (Precios)"),
+                        dbc.Alert([
+                            html.I(className="bi bi-info-circle me-2"),
+                            html.Strong("¿Qué es Prophet? "),
+                            "Prophet es un modelo de aprendizaje automático desarrollado por Facebook que analiza tendencias históricas de precios. ",
+                            "Identifica patrones estacionales y tendencias a largo plazo para predecir el precio futuro del índice. ",
+                            "La banda verde muestra el rango de confianza (80%): es probable que el precio real esté dentro de ese rango. ",
+                            "Es útil para planificar inversiones a corto y medio plazo."
+                        ], color="info", className="mb-2"),
                         html.P([
-                            html.Strong("Precio actual: "), f"€{resultado_prophet['precio_actual']:,.2f}",
+                            html.Strong("Precio actual: "), f"{simbolo_divisa}{resultado_prophet['precio_actual']:,.2f}",
                             html.Br(),
-                            html.Strong("Precio predicho (30 días): "), f"€{resultado_prophet['precio_predicho_30d']:,.2f}",
+                            html.Strong("Precio predicho (30 días): "), f"{simbolo_divisa}{resultado_prophet['precio_predicho_30d']:,.2f}",
                             html.Br(),
                             html.Strong("Retorno estimado (30 días): "),
                             html.Span(f"{retorno_prophet*100:.2f}%", className=f"text-{color}")
@@ -699,14 +607,97 @@ def mostrar_prediccion_ml(datos_indice, nombre_indice):
             )
         
         # Crear gráfico de Prophet si está disponible
-        figura_prophet = {}
+        figura_prophet = {'data': [], 'layout': {'title': 'Cargando gráfico...'}}
         if 'prophet' in resultados_ml and 'error' not in resultados_ml['prophet']:
             try:
-                figura_prophet = visualization.grafico_prophet_prediccion(
+                fig_prophet = visualization.grafico_prophet_prediccion(
                     resultados_ml['prophet'], nombre_indice
                 )
+                # Convertir a diccionario si es un objeto Figure
+                if isinstance(fig_prophet, dict):
+                    figura_prophet = fig_prophet
+                elif hasattr(fig_prophet, 'to_dict'):
+                    figura_prophet = fig_prophet.to_dict()
+                else:
+                    # Si no es ni dict ni tiene to_dict, crear un gráfico de error
+                    figura_prophet = {
+                        'data': [], 
+                        'layout': {
+                            'title': 'Error: Formato de gráfico no válido',
+                            'annotations': [{
+                                'text': 'Error: Formato de gráfico no válido',
+                                'xref': 'paper',
+                                'yref': 'paper',
+                                'x': 0.5,
+                                'y': 0.5,
+                                'xanchor': 'center',
+                                'yanchor': 'middle',
+                                'showarrow': False
+                            }]
+                        }
+                    }
+                
+                # Validar que el gráfico tenga datos
+                if isinstance(figura_prophet, dict):
+                    if 'data' not in figura_prophet:
+                        figura_prophet['data'] = []
+                    if 'layout' not in figura_prophet:
+                        figura_prophet['layout'] = {'title': 'Gráfico sin layout'}
+                    
+                    # Si no hay datos, agregar mensaje
+                    if len(figura_prophet.get('data', [])) == 0:
+                        if 'annotations' not in figura_prophet.get('layout', {}):
+                            figura_prophet['layout']['annotations'] = []
+                        figura_prophet['layout']['annotations'].append({
+                            'text': 'No hay datos para mostrar. Verifica que Prophet haya generado predicciones.',
+                            'xref': 'paper',
+                            'yref': 'paper',
+                            'x': 0.5,
+                            'y': 0.5,
+                            'xanchor': 'center',
+                            'yanchor': 'middle',
+                            'showarrow': False,
+                            'font': {'size': 14, 'color': 'red'}
+                        })
             except Exception as e:
-                figura_prophet = {'data': [], 'layout': {'title': f'Error en gráfico Prophet: {str(e)}'}}
+                error_msg = f'Error en gráfico Prophet: {str(e)}'
+                figura_prophet = {
+                    'data': [], 
+                    'layout': {
+                        'title': error_msg,
+                        'annotations': [{
+                            'text': error_msg,
+                            'xref': 'paper',
+                            'yref': 'paper',
+                            'x': 0.5,
+                            'y': 0.5,
+                            'xanchor': 'center',
+                            'yanchor': 'middle',
+                            'showarrow': False,
+                            'font': {'size': 14, 'color': 'red'}
+                        }]
+                    }
+                }
+        elif 'prophet' in resultados_ml and 'error' in resultados_ml['prophet']:
+            # Si hay un error en Prophet, mostrar mensaje
+            error_msg = resultados_ml['prophet']['error']
+            figura_prophet = {
+                'data': [], 
+                'layout': {
+                    'title': f'Error Prophet: {error_msg}',
+                    'annotations': [{
+                        'text': f'Error Prophet: {error_msg}',
+                        'xref': 'paper',
+                        'yref': 'paper',
+                        'x': 0.5,
+                        'y': 0.5,
+                        'xanchor': 'center',
+                        'yanchor': 'middle',
+                        'showarrow': False,
+                        'font': {'size': 14, 'color': 'orange'}
+                    }]
+                }
+            }
         
         if contenido:
             return contenido, figura_prophet
@@ -824,42 +815,3 @@ def calcular_inversion_periodica(n_clicks, nombre_indice, cantidad_mensual, año
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
-=======
-        return "Carga datos del índice para ver la predicción ML"
-    
-    try:
-        df = pd.DataFrame(datos_indice)
-        df.index = pd.to_datetime(df.index)
-        
-        resultado_ml = ml_models.entrenar_y_predecir_indice(df, nombre_indice)
-        
-        retorno_pred = resultado_ml['retorno_predicho']
-        if retorno_pred is not None:
-            color = "success" if retorno_pred >= 0 else "danger"
-            icono = "📈" if retorno_pred >= 0 else "📉"
-            
-            return [
-                html.H5(f"{icono} Predicción del Modelo ML"),
-                html.P([
-                    html.Strong("Retorno estimado para el próximo mes: "),
-                    html.Span(f"{retorno_pred*100:.2f}%", className=f"text-{color}")
-                ]),
-                html.P([
-                    html.Strong("Métricas del modelo:"),
-                    html.Br(),
-                    f"RMSE: {resultado_ml['metricas']['RMSE']:.4f}",
-                    html.Br(),
-                    f"MAE: {resultado_ml['metricas']['MAE']:.4f}"
-                ], className="text-muted small")
-            ]
-        else:
-            return "No se pudo generar la predicción ML"
-            
-    except Exception as e:
-        return f"Error en predicción ML: {str(e)}"
-
-
-if __name__ == '__main__':
-    app.run_server(debug=True, port=8050)
-
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f

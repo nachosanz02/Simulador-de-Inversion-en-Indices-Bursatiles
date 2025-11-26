@@ -22,11 +22,7 @@ if __name__ == '__main__':
     print("="*60 + "\n")
     
     try:
-<<<<<<< HEAD
         app.run(debug=True, host='127.0.0.1', port=8050)
-=======
-        app.run_server(debug=True, host='127.0.0.1', port=8050)
->>>>>>> 41a77c7b8e0fea3b9dd2af8b141f08f9f0475d9f
     except KeyboardInterrupt:
         print("\n\nDashboard detenido. ¡Hasta luego!")
 

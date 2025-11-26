@@ -31,19 +31,43 @@ def calcular_indicadores_compra_venta(df: pd.DataFrame) -> dict:
     
     precio_actual = df['Close'].iloc[-1]
     
-    # Calcular RSI (Relative Strength Index)
-    if 'Returns' not in df.columns:
-        returns = df['Close'].pct_change()
-    else:
-        returns = df['Returns']
+    # Calcular RSI (Relative Strength Index) usando el método estándar de Wilder
+    # El RSI usa cambios de precio, no retornos porcentuales
+    delta = df['Close'].diff()
     
-    ganancias = returns.where(returns > 0, 0)
-    perdidas = -returns.where(returns < 0, 0)
+    # Separar ganancias y pérdidas
+    ganancias = delta.where(delta > 0, 0)
+    perdidas = -delta.where(delta < 0, 0)
     
-    avg_gain = ganancias.rolling(window=14).mean()
-    avg_loss = perdidas.rolling(window=14).mean()
+    # Usar el método de suavizado de Wilder (no media móvil simple)
+    # Para el primer período, usar promedio simple
+    # Para períodos siguientes: avg = (prev_avg * (period-1) + current) / period
+    period = 14
     
-    rs = avg_gain / (avg_loss + 1e-10)
+    # Calcular promedio inicial (primeros 14 períodos) - promedio simple
+    avg_gain = ganancias.rolling(window=period).mean()
+    avg_loss = perdidas.rolling(window=period).mean()
+    
+    # Aplicar suavizado de Wilder de forma vectorizada
+    # Crear arrays numpy para cálculos más eficientes
+    gain_arr = ganancias.values
+    loss_arr = perdidas.values
+    avg_gain_arr = avg_gain.values.copy()
+    avg_loss_arr = avg_loss.values.copy()
+    
+    # Aplicar suavizado de Wilder iterativamente
+    for i in range(period, len(gain_arr)):
+        if not np.isnan(avg_gain_arr[i-1]) and not np.isnan(gain_arr[i]):
+            avg_gain_arr[i] = (avg_gain_arr[i-1] * (period - 1) + gain_arr[i]) / period
+        if not np.isnan(avg_loss_arr[i-1]) and not np.isnan(loss_arr[i]):
+            avg_loss_arr[i] = (avg_loss_arr[i-1] * (period - 1) + loss_arr[i]) / period
+    
+    # Convertir de vuelta a Series
+    avg_gain = pd.Series(avg_gain_arr, index=df.index)
+    avg_loss = pd.Series(avg_loss_arr, index=df.index)
+    
+    # Calcular RS y RSI
+    rs = avg_gain / (avg_loss + 1e-10)  # +1e-10 para evitar división por cero
     rsi = 100 - (100 / (1 + rs))
     rsi_actual = rsi.iloc[-1] if not pd.isna(rsi.iloc[-1]) else 50
     
@@ -54,6 +78,12 @@ def calcular_indicadores_compra_venta(df: pd.DataFrame) -> dict:
     signal = macd.ewm(span=9, adjust=False).mean()
     macd_actual = macd.iloc[-1] if not pd.isna(macd.iloc[-1]) else 0
     signal_actual = signal.iloc[-1] if not pd.isna(signal.iloc[-1]) else 0
+    
+    # Calcular retornos para la volatilidad
+    if 'Returns' in df.columns:
+        returns = df['Returns']
+    else:
+        returns = df['Close'].pct_change()
     
     # Calcular volatilidad
     volatilidad = returns.rolling(window=30).std().iloc[-1] * np.sqrt(252) * 100  # Anualizada
