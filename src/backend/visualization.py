@@ -67,45 +67,36 @@ def grafico_comparacion_indices_multiple(datos_indices: dict, indices_selecciona
     
     colores = px.colors.qualitative.Set1
     
-    # Encontrar la fecha más reciente común entre todos los índices
+    # Encontrar la fecha más antigua común (para normalizar al 100% al inicio)
+    # y la fecha más reciente (para mostrar hasta hoy)
+    fechas_minimas = []
     fechas_maximas = []
     for nombre_indice in indices_seleccionados:
         if nombre_indice in datos_indices:
             df = datos_indices[nombre_indice]
             if 'Close' in df.columns and len(df) > 0:
+                fechas_minimas.append(df.index.min())
                 fechas_maximas.append(df.index.max())
     
-    if not fechas_maximas:
+    if not fechas_minimas or not fechas_maximas:
         return fig
     
-    # Usar la fecha más reciente común (o la más antigua de las máximas para tener datos de todos)
-    fecha_referencia = min(fechas_maximas)
-    
-    # También encontrar la fecha más antigua común para el rango del gráfico
-    fechas_minimas = []
-    for nombre_indice in indices_seleccionados:
-        if nombre_indice in datos_indices:
-            df = datos_indices[nombre_indice]
-            if 'Close' in df.columns and len(df) > 0:
-                # Filtrar solo datos hasta la fecha de referencia
-                df_filtrado = df[df.index <= fecha_referencia]
-                if len(df_filtrado) > 0:
-                    fechas_minimas.append(df_filtrado.index.min())
-    
-    fecha_inicio_comun = max(fechas_minimas) if fechas_minimas else fecha_referencia - pd.DateOffset(years=10)
+    # Fecha de inicio común: la más reciente de las fechas mínimas (para que todos tengan datos desde ahí)
+    fecha_inicio_comun = max(fechas_minimas)
+    # Fecha final: mostrar hasta hoy (la más reciente disponible de cada índice)
+    # No limitamos a una fecha común, cada índice muestra hasta su fecha más reciente
     
     for i, nombre_indice in enumerate(indices_seleccionados):
         if nombre_indice in datos_indices:
             df = datos_indices[nombre_indice]
             if 'Close' in df.columns and len(df) > 0:
-                # Filtrar datos hasta la fecha de referencia
-                df_filtrado = df[df.index <= fecha_referencia].copy()
-                df_filtrado = df_filtrado[df_filtrado.index >= fecha_inicio_comun]
+                # Filtrar datos desde la fecha de inicio común hasta hoy (fecha máxima de cada índice)
+                df_filtrado = df[df.index >= fecha_inicio_comun].copy()
                 
                 if len(df_filtrado) > 0:
-                    # Normalizar al 100% en la fecha de referencia (última fecha común)
-                    precio_referencia = df_filtrado['Close'].iloc[-1]
-                    valores_normalizados = (df_filtrado['Close'] / precio_referencia) * 100
+                    # Normalizar al 0% en la fecha de inicio común (mostrar crecimiento porcentual)
+                    precio_referencia = df_filtrado['Close'].iloc[0]
+                    valores_normalizados = ((df_filtrado['Close'] / precio_referencia) - 1) * 100
                     
                     fig.add_trace(go.Scatter(
                         x=df_filtrado.index,
@@ -115,19 +106,44 @@ def grafico_comparacion_indices_multiple(datos_indices: dict, indices_selecciona
                         line=dict(color=colores[i % len(colores)], width=2.5),
                         hovertemplate=f'<b>{nombre_indice}</b><br>' +
                                       'Fecha: %{x}<br>' +
-                                      'Valor normalizado: %{y:.2f}%<br>' +
+                                      'Crecimiento: %{y:.2f}%<br>' +
                                       'Precio: %{customdata:,.2f}<extra></extra>',
                         customdata=df_filtrado['Close']
                     ))
     
+    # Calcular el rango del eje Y basado en los valores de crecimiento porcentual
+    # Encontrar el valor máximo y mínimo de todos los índices para ajustar el rango
+    valores_maximos = []
+    valores_minimos = []
+    for nombre_indice in indices_seleccionados:
+        if nombre_indice in datos_indices:
+            df = datos_indices[nombre_indice]
+            if 'Close' in df.columns and len(df) > 0:
+                df_filtrado = df[df.index >= fecha_inicio_comun].copy()
+                if len(df_filtrado) > 0:
+                    precio_referencia = df_filtrado['Close'].iloc[0]
+                    valores_normalizados = ((df_filtrado['Close'] / precio_referencia) - 1) * 100
+                    valores_maximos.append(valores_normalizados.max())
+                    valores_minimos.append(valores_normalizados.min())
+    
+    # Ajustar el rango del eje Y: empezar desde 0% (o un poco menos para mejor visualización)
+    y_min = -10
+    if valores_minimos:
+        y_min = min(0, min(valores_minimos) * 1.1)  # 10% de margen por debajo del mínimo
+    
+    y_max = 100
+    if valores_maximos:
+        y_max = max(valores_maximos) * 1.1  # 10% de margen por encima del máximo
+    
     fig.update_layout(
-        title=dict(text='Comparación de Índices Bursátiles (Normalizados al 100% en fecha común)', x=0.5, xanchor='center'),
+        title=dict(text='Comparación de Índices Bursátiles (Crecimiento desde fecha inicial)', x=0.5, xanchor='center'),
         xaxis_title='Fecha',
-        yaxis_title='Valor Normalizado (%)',
+        yaxis_title='Crecimiento (%)',
         hovermode='x unified',
         template='plotly_white',
         height=500,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        yaxis=dict(range=[y_min, y_max])
     )
     
     return fig
@@ -218,11 +234,8 @@ def grafico_inversion_periodica(resultado_simulacion: dict) -> go.Figure:
     valores = [e['valor_actual'] for e in evolucion]
     contribuciones = [e['total_invertido'] for e in evolucion]
     
-    # Datos de proyección anual (para mostrar puntos clave)
+    # Datos de proyección anual (ya no se usan para puntos, pero se mantienen por si se necesitan)
     proyeccion = resultado_simulacion['proyeccion_futura']
-    años_proy = [pd.Timestamp(f"{p['año']}-01-01") for p in proyeccion]
-    valores_anuales = [p['valor_proyectado'] for p in proyeccion]
-    contribuciones_anuales = [p['contribucion_total'] for p in proyeccion]
     
     # Línea de valor proyectado (verde con área sombreada)
     fig.add_trace(go.Scatter(
@@ -318,13 +331,13 @@ def grafico_inversion_periodica(resultado_simulacion: dict) -> go.Figure:
     titulo_completo = f'Proyección de Inversión Periódica - {resultado_simulacion["nombre_indice"]} ({divisa})<br><sub>Inicio: {resultado_simulacion["fecha_inicio"]} | Fin proyectado: {resultado_simulacion["fecha_fin_proyectada"]}</sub>'
     
     fig.update_layout(
-        title=titulo_completo,
+        title=dict(text=titulo_completo, x=0.5, xanchor='center'),
         xaxis_title='Fecha',
         yaxis_title=f'Valor ({divisa})',
         hovermode='x unified',
         template='plotly_white',
         height=500,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="v", yanchor="top", y=1, xanchor="right", x=1.02)
     )
     
     return fig
