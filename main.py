@@ -34,14 +34,19 @@ def descargar_y_preprocesar_datos():
 
 def ejecutar_dashboard():
     """Ejecuta la aplicación Dash"""
+    # Render proporciona el puerto a través de la variable de entorno PORT
+    port = int(os.environ.get('PORT', 8050))
+    
     print("\n" + "=" * 60)
     print("INICIANDO DASHBOARD")
     print("=" * 60)
-    print("Abre tu navegador en: http://127.0.0.1:8050")
+    print(f"Abre tu navegador en: http://127.0.0.1:{port}")
     print("Presiona Ctrl+C para detener el servidor")
     print("=" * 60 + "\n")
     
-    app.run(debug=True, host='0.0.0.0', port=10000)
+    # En producción (Render), debug debe ser False
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    app.run(debug=debug, host='0.0.0.0', port=port)
 
 
 
