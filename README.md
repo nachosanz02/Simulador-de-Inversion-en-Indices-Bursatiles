@@ -2,6 +2,15 @@ Desarrollo-de-aplicacines-para-la-visualizacion-de-datos
 
 Simulador de Inversión en Indices Bursatiles 
 
+## 🌐 Acceso a la Aplicación
+
+**La aplicación está disponible en línea en:**
+👉 [https://simulador-de-inversion-en-indices.onrender.com/](https://simulador-de-inversion-en-indices.onrender.com/)
+
+Puedes acceder directamente desde tu navegador sin necesidad de instalar nada.
+
+---
+
 Descripción
 
 Este proyecto desarrolla un dashboard interactivo para simular inversiones pasadas en los principales índices bursátiles internacionales: S&P 500, FTSE 100, IBEX 35, FTSE MIB, CAC 40 y DAX 40.
